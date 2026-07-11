@@ -11,7 +11,6 @@ export function schoolColor(school: string | null | undefined): string {
   return "#7a7a7a";
 }
 
-/** 전화번호 자릿수 포맷: 'XXXX' 까지는 그대로, 이후 'XXXX-XXXX' */
 export function fmtDigits(d: string): string {
   if (!d) return "";
   return d.length <= 4 ? d : d.slice(0, 4) + "-" + d.slice(4);

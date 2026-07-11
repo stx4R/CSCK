@@ -14,7 +14,6 @@ const FILTER_DEFS = [
 
 type FilterId = (typeof FILTER_DEFS)[number]["id"];
 
-// 비밀번호 잠금은 middleware.ts + /unlock 페이지에서 서버 측으로 처리된다.
 export default function Dashboard() {
   const { users, records, refresh } = useAttendance();
   const [filter, setFilter] = useState<FilterId>("all");
@@ -81,7 +80,7 @@ export default function Dashboard() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <span className="header-title">관리자 대시보드</span>
-          <span className="header-caption">제3회 전국모의국회 출석 현황</span>
+          <span className="header-caption">제3회 오량모의국회 출석 현황</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button className="pill-danger" onClick={clearAll}>

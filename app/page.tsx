@@ -47,7 +47,6 @@ export default function AttendanceCheck() {
   const [digits, setDigits] = useState("");
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [forceOpen, setForceOpen] = useState(false);
-  const [forceMode, setForceMode] = useState<"name" | "phone">("name");
   const [forceName, setForceName] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [success, setSuccess] = useState<Success | null>(null);
@@ -76,7 +75,6 @@ export default function AttendanceCheck() {
     setDigits("");
     setKeypadOpen(false);
     setForceOpen(false);
-    setForceMode("name");
     setForceName("");
     setSuccess(null);
     setConfirmTarget(null);
@@ -142,20 +140,38 @@ export default function AttendanceCheck() {
     else setDigits((d) => (d.length < MAX_DIGITS ? d + k : d));
   };
 
-  const forceComplete = () => {
-    if (forceMode === "name" && !forceName.trim()) {
-      showToast("이름을 입력해주세요.");
-      return;
+  const forcePanelVisible = noMatch && forceOpen;
+  const inlineKeypadRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (forcePanelVisible && keypadOpen) {
+      inlineKeypadRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-    if (forceMode === "phone" && !digits) {
-      showToast("전화번호를 입력해주세요.");
+  }, [forcePanelVisible, keypadOpen]);
+
+  const keypadButtons = KEY_DEFS.map((k, i) => (
+    <button
+      key={i}
+      className={"key" + (k === "del" ? " del" : "") + (k === "" ? " blank" : "")}
+      onClick={(e) => {
+        e.stopPropagation();
+        pressKey(k);
+      }}
+    >
+      {k === "del" ? "⌫" : k}
+    </button>
+  ));
+
+  const forceComplete = () => {
+    const name = forceName.trim();
+    if (!name && !digits) {
+      showToast("이름 또는 전화번호를 입력해주세요.");
       return;
     }
     completeCheck(
       {
         id: null,
-        name: forceMode === "name" ? forceName.trim() : "(이름 미입력)",
-        phone: forceMode === "name" ? "" : "010-" + fmtDigits(digits),
+        name: name || "(이름 미입력)",
+        phone: digits ? "010-" + fmtDigits(digits) : "",
         school: null,
         role: null,
       },
@@ -173,7 +189,15 @@ export default function AttendanceCheck() {
     >
       {/* ============ Header ============ */}
       <header className="app-header">
-        <div className="header-left">
+        <div
+          className="header-left header-home"
+          role="button"
+          title="처음 화면으로"
+          onClick={(e) => {
+            e.stopPropagation();
+            resetAll();
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -230,33 +254,30 @@ export default function AttendanceCheck() {
             </div>
 
             {/* keypad — morphs from field */}
-            <div className={"keypad" + (keypadOpen ? " open" : "")} onClick={(e) => e.stopPropagation()}>
-              {KEY_DEFS.map((k, i) => (
-                <button
-                  key={i}
-                  className={"key" + (k === "del" ? " del" : "") + (k === "" ? " blank" : "")}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    pressKey(k);
-                  }}
-                >
-                  {k === "del" ? "⌫" : k}
-                </button>
-              ))}
+            <div
+              className={"keypad" + (keypadOpen && !forcePanelVisible ? " open" : "")}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {keypadButtons}
             </div>
           </div>
 
           {/* Step 5: no match → alert + forced check-in */}
           {noMatch && (
-            <div className="no-match-block" onClick={(e) => e.stopPropagation()}>
+            <div
+              className={"no-match-block" + (keypadOpen && !forcePanelVisible ? " push-down" : "")}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="alert-red">
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flex: "none", marginTop: 1 }}>
                   <circle cx="10" cy="10" r="8.2" stroke="#d70015" strokeWidth="1.5" />
                   <path d="M10 6v4.5" stroke="#d70015" strokeWidth="1.6" strokeLinecap="round" />
                   <circle cx="10" cy="13.6" r="1" fill="#d70015" />
                 </svg>
-                <p>구글 폼 신청서 데이터베이스에 입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
-                <p>강제로 출석체크를 진행하시겠습니까?</p>
+                <div className="alert-red-text">
+                  <p>구글 폼 신청서 데이터베이스에 입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
+                  <p>강제로 출석체크를 진행하시겠습니까?</p>
+                </div>
               </div>
               {!forceOpen ? (
                 <button
@@ -270,38 +291,18 @@ export default function AttendanceCheck() {
                   강제로 출석체크 완료하기
                 </button>
               ) : (
-                <div className="force-panel">
-                  <span className="force-panel-title">강제로 출석체크 완료하기</span>
-                  <div className="seg-track">
-                    <button
-                      className={"seg-btn" + (forceMode === "name" ? " selected" : "")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setForceMode("name");
-                        setKeypadOpen(false);
-                      }}
-                    >
-                      이름
-                    </button>
-                    <button
-                      className={"seg-btn" + (forceMode === "phone" ? " selected" : "")}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setForceMode("phone");
-                        setKeypadOpen(true);
-                      }}
-                    >
-                      전화번호
-                    </button>
-                  </div>
-                  {forceMode === "name" ? (
+                <>
+                  <div className="force-panel">
+                    <span className="force-panel-title">강제로 출석체크 완료하기</span>
+                    <span className="force-field-label">이름</span>
                     <input
                       className="force-input"
                       value={forceName}
                       onChange={(e) => setForceName(e.target.value)}
+                      onFocus={() => setKeypadOpen(false)}
                       placeholder="이름을 입력하세요"
                     />
-                  ) : (
+                    <span className="force-field-label">전화번호</span>
                     <div
                       className="force-phone-field"
                       onClick={(e) => {
@@ -313,17 +314,23 @@ export default function AttendanceCheck() {
                       <span className="force-phone-digits">{fmtDigits(digits)}</span>
                       <span className="force-phone-hint">키패드로 입력</span>
                     </div>
+                    <button
+                      className="force-done"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        forceComplete();
+                      }}
+                    >
+                      완료
+                    </button>
+                  </div>
+                  {/* keypad — morphs from field */}
+                  {keypadOpen && (
+                    <div ref={inlineKeypadRef} className="keypad inline" onClick={(e) => e.stopPropagation()}>
+                      {keypadButtons}
+                    </div>
                   )}
-                  <button
-                    className="force-done"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      forceComplete();
-                    }}
-                  >
-                    완료
-                  </button>
-                </div>
+                </>
               )}
             </div>
           )}
