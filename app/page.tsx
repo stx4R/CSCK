@@ -9,15 +9,6 @@ import { fmtDigits, roleColor, schoolColor } from "@/lib/colors";
 const SUCCESS_HOLD_MS = 3000;
 const MAX_DIGITS = 8;
 
-const ROLE_DEFS = [
-  { name: "참가자", color: "#248a3d", tint: "rgba(52,199,89,0.10)" },
-  { name: "운영자", color: "#d70015", tint: "rgba(255,59,48,0.08)" },
-];
-const SCHOOL_DEFS = [
-  { name: "대신고", color: "#248a3d", tint: "rgba(52,199,89,0.10)" },
-  { name: "동방고", color: "#d70015", tint: "rgba(255,59,48,0.08)" },
-  { name: "대전외고", color: "#0066cc", tint: "rgba(0,102,204,0.08)" },
-];
 const KEY_DEFS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "del"];
 const CONFETTI_COLORS = ["#34c759", "#ff3b30", "#0071e3", "#ffcc00", "#af52de"];
 
@@ -28,7 +19,7 @@ type CheckTarget = {
   school: string | null;
   role: string | null;
 };
-type Success = { name: string; role: string; school: string };
+type Success = { name: string; role: string | null; school: string | null };
 type ConfettiPiece = {
   left: number;
   delay: number;
@@ -52,8 +43,6 @@ function makeConfetti(): ConfettiPiece[] {
 export default function AttendanceCheck() {
   const { users, records, refresh } = useAttendance();
 
-  const [role, setRole] = useState<string | null>(null);
-  const [school, setSchool] = useState<string | null>(null);
   const [digits, setDigits] = useState("");
   const [keypadOpen, setKeypadOpen] = useState(false);
   const [forceOpen, setForceOpen] = useState(false);
@@ -82,8 +71,6 @@ export default function AttendanceCheck() {
   };
 
   const resetAll = () => {
-    setRole(null);
-    setSchool(null);
     setDigits("");
     setKeypadOpen(false);
     setForceOpen(false);
@@ -108,10 +95,6 @@ export default function AttendanceCheck() {
   const matchedStr = digits ? "010-" + fmtDigits(digits) : "";
 
   const completeCheck = async (u: CheckTarget, forced: boolean) => {
-    if (!role || !school) {
-      showToast("먼저 자신의 역할과 소속 고등학교를 선택해주세요.");
-      return;
-    }
     if (!forced && u.id != null && checkedIds.has(u.id)) {
       showToast("이미 출석체크가 완료된 사용자입니다.");
       return;
@@ -124,8 +107,8 @@ export default function AttendanceCheck() {
       phone: u.phone || null,
       school: u.school,
       role: u.role,
-      declared_role: role,
-      declared_school: school,
+      declared_role: null,
+      declared_school: null,
       forced,
     });
     busyRef.current = false;
@@ -142,8 +125,8 @@ export default function AttendanceCheck() {
     setConfetti(makeConfetti());
     setSuccess({
       name: u.name,
-      role: u.role || role,
-      school: u.school || school,
+      role: u.role,
+      school: u.school,
     });
     setKeypadOpen(false);
     clearTimeout(successTimer.current);
@@ -170,8 +153,8 @@ export default function AttendanceCheck() {
         id: null,
         name: forceMode === "name" ? forceName.trim() : "(이름 미입력)",
         phone: forceMode === "name" ? "" : "010-" + fmtDigits(digits),
-        school,
-        role,
+        school: null,
+        role: null,
       },
       true
     );
@@ -206,49 +189,7 @@ export default function AttendanceCheck() {
       <main className="kiosk-main">
         {/* ===== Left: steps ===== */}
         <section className="steps">
-          {/* Step 1: role */}
-          <div className="step">
-            <h2 className="step-title">자신의 역할을 선택하세요.</h2>
-            <div className="choice-grid-2">
-              {ROLE_DEFS.map((d) => (
-                <button
-                  key={d.name}
-                  className={"choice-btn" + (role === d.name ? " selected" : "")}
-                  style={{ fontSize: 19, "--sel": d.color, "--tint": d.tint } as React.CSSProperties}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRole(role === d.name ? null : d.name);
-                    setKeypadOpen(false);
-                  }}
-                >
-                  {d.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 2: school */}
-          <div className="step">
-            <h2 className="step-title">자신의 소속 고등학교를 선택하세요.</h2>
-            <div className="choice-grid-3">
-              {SCHOOL_DEFS.map((d) => (
-                <button
-                  key={d.name}
-                  className={"choice-btn" + (school === d.name ? " selected" : "")}
-                  style={{ fontSize: 18, "--sel": d.color, "--tint": d.tint } as React.CSSProperties}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSchool(school === d.name ? null : d.name);
-                    setKeypadOpen(false);
-                  }}
-                >
-                  {d.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Step 3: phone + keypad */}
+          {/* Step: phone + keypad */}
           <div className="step phone-step">
             <h2
               className="step-title clickable"
@@ -306,7 +247,8 @@ export default function AttendanceCheck() {
                   <path d="M10 6v4.5" stroke="#d70015" strokeWidth="1.6" strokeLinecap="round" />
                   <circle cx="10" cy="13.6" r="1" fill="#d70015" />
                 </svg>
-                <p>입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
+                <p>구글 폼 신청서 데이터베이스에 입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
+                <p>강제로 출석체크를 진행하시겠습니까?</p>
               </div>
               {!forceOpen ? (
                 <button
@@ -488,11 +430,17 @@ export default function AttendanceCheck() {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
               <span className="success-title">출석체크 완료!</span>
               <span className="success-name">{success.name}</span>
-              <span className="success-sub">
-                <span style={{ color: roleColor(success.role), fontWeight: 600 }}>{success.role}</span>
-                <span className="dot-sep">·</span>
-                <span style={{ color: schoolColor(success.school), fontWeight: 600 }}>{success.school}</span>
-              </span>
+              {(success.role || success.school) && (
+                <span className="success-sub">
+                  {success.role && (
+                    <span style={{ color: roleColor(success.role), fontWeight: 600 }}>{success.role}</span>
+                  )}
+                  {success.role && success.school && <span className="dot-sep">·</span>}
+                  {success.school && (
+                    <span style={{ color: schoolColor(success.school), fontWeight: 600 }}>{success.school}</span>
+                  )}
+                </span>
+              )}
             </div>
             <span className="success-hint">잠시 후 처음 화면으로 돌아갑니다</span>
           </div>

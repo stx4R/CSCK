@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "제3회 오량모의국회 출석체크",
-  description: "오량모 제3회 전국모의국회 출석체크 · iPad 전용",
+  description: "전자 태블릿 출석체크 시스템",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
