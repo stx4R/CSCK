@@ -275,7 +275,7 @@ export default function AttendanceCheck() {
                   <circle cx="10" cy="13.6" r="1" fill="#d70015" />
                 </svg>
                 <div className="alert-red-text">
-                  <p>구글 폼 신청서 데이터베이스에 입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
+                  <p>구글폼 신청서에 입력하신 전화번호와 일치하는 참가자 및 운영자가 존재하지 않습니다.</p>
                   <p>강제로 출석체크를 진행하시겠습니까?</p>
                 </div>
               </div>
