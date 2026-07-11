@@ -1,5 +1,5 @@
 -- ============================================================
--- Oryangmo 제3회 전국모의국회 출석체크 — Supabase schema
+-- Oryangmo 제3회 오량모의국회 출석체크 — Supabase schema
 -- Run this in: Supabase Dashboard → SQL Editor → New query → Run
 -- ============================================================
 

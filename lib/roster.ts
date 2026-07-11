@@ -1,5 +1,3 @@
-// Auto-generated from supabase/seed.sql — do not edit by hand.
-// Fallback roster used when Supabase env vars are not configured.
 import type { User } from "./types";
 
 export const ROSTER: User[] = [

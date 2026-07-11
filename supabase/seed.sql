@@ -1,6 +1,3 @@
--- Seed roster (auto-generated from xlsx)
--- Run AFTER schema.sql
-
 insert into public.users (name, phone, digits, school, role) values
 ('이유빈A', '010-8297-1061', '82971061', '대전외고', '참가자'),
 ('강채원', '010-9560-1934', '95601934', '대전외고', '참가자'),

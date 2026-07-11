@@ -76,7 +76,7 @@ export async function clearRecords(): Promise<boolean> {
   return true;
 }
 
-/** 기록 변경 구독. Supabase Realtime 또는(로컬 모드) storage 이벤트 + 2초 폴링 */
+/** 기록 변경 구독. Supabase Realtime + 폴링 백업, 또는(로컬 모드) storage 이벤트 + 2초 폴링 */
 export function subscribeRecords(onChange: () => void): () => void {
   if (supabase) {
     const sb = supabase;
@@ -88,7 +88,10 @@ export function subscribeRecords(onChange: () => void): () => void {
         () => onChange()
       )
       .subscribe();
+    // Realtime(WebSocket)이 막히거나 끊겨도 모든 기기가 따라오도록 폴링 백업
+    const poll = setInterval(onChange, 5000);
     return () => {
+      clearInterval(poll);
       sb.removeChannel(channel);
     };
   }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { insertRecord } from "@/lib/attendance";
+import { supabase } from "@/lib/supabase";
 import { useAttendance } from "@/lib/useAttendance";
 import { fmtDigits, roleColor, schoolColor } from "@/lib/colors";
 
@@ -51,6 +52,7 @@ export default function AttendanceCheck() {
   const [toast, setToast] = useState<string | null>(null);
   const [success, setSuccess] = useState<Success | null>(null);
   const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const [confirmTarget, setConfirmTarget] = useState<CheckTarget | null>(null);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const successTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -77,6 +79,7 @@ export default function AttendanceCheck() {
     setForceMode("name");
     setForceName("");
     setSuccess(null);
+    setConfirmTarget(null);
   };
 
   const checkedIds = useMemo(() => {
@@ -175,6 +178,11 @@ export default function AttendanceCheck() {
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span className="header-title">제3회 오량모의국회 출석체크</span>
+            {!supabase && (
+              <span className="header-caption" style={{ color: "#ff9f0a", fontWeight: 600 }}>
+                오프라인 모드 — Supabase 미연결 (기록이 이 기기에만 저장됩니다)
+              </span>
+            )}
           </div>
         </div>
         <Link href="/dashboard" className="pill-link" onClick={(e) => e.stopPropagation()}>
@@ -337,10 +345,11 @@ export default function AttendanceCheck() {
                   onClick={(e) => {
                     e.stopPropagation();
                     setKeypadOpen(false);
-                    completeCheck(
-                      { id: u.id, name: u.name, phone: u.phone, school: u.school ?? null, role: u.role },
-                      false
-                    );
+                    if (checked) {
+                      showToast("이미 출석체크가 완료된 사용자입니다.");
+                      return;
+                    }
+                    setConfirmTarget({ id: u.id, name: u.name, phone: u.phone, school: u.school ?? null, role: u.role });
                   }}
                 >
                   <div
@@ -390,6 +399,65 @@ export default function AttendanceCheck() {
           </div>
         </section>
       </main>
+
+      {/* ============ 출석체크 확인 ============ */}
+      {confirmTarget && (
+        <div className="overlay" style={{ zIndex: 45 }} onClick={() => setConfirmTarget(null)}>
+          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="avatar"
+              style={{
+                width: 56,
+                height: 56,
+                fontSize: 21,
+                background: confirmTarget.role === "운영자" ? "rgba(255,59,48,0.10)" : "rgba(52,199,89,0.12)",
+                color: roleColor(confirmTarget.role || "참가자"),
+              }}
+            >
+              {confirmTarget.name.charAt(0)}
+            </div>
+            <span className="confirm-title">
+              <strong>{confirmTarget.name}</strong>님으로
+              <br />
+              출석체크를 하시겠습니까?
+            </span>
+            {(confirmTarget.role || confirmTarget.school || confirmTarget.phone) && (
+              <span className="confirm-sub">
+                {confirmTarget.role && (
+                  <span style={{ color: roleColor(confirmTarget.role), fontWeight: 600 }}>{confirmTarget.role}</span>
+                )}
+                {confirmTarget.role && confirmTarget.school && <span className="dot-sep">·</span>}
+                {confirmTarget.school && (
+                  <span style={{ color: schoolColor(confirmTarget.school), fontWeight: 600 }}>
+                    {confirmTarget.school}
+                  </span>
+                )}
+                {confirmTarget.phone && (confirmTarget.role || confirmTarget.school) && (
+                  <span className="dot-sep">·</span>
+                )}
+                {confirmTarget.phone && (
+                  <span style={{ fontVariantNumeric: "tabular-nums" }}>{confirmTarget.phone}</span>
+                )}
+              </span>
+            )}
+            <div className="confirm-actions">
+              <button className="confirm-no" onClick={() => setConfirmTarget(null)}>
+                아니요
+              </button>
+              <button
+                className="confirm-yes"
+                onClick={() => {
+                  const target = confirmTarget;
+                  setConfirmTarget(null);
+                  completeCheck(target, false);
+                }}
+              >
+                네
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============ Toast ============ */}
       {toast && <div className="toast">{toast}</div>}
