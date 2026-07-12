@@ -524,3 +524,4 @@ export default function AttendanceCheck() {
     </div>
   );
 }
+<link rel="apple-touch-icon" href="public/thumbnail.jpg"></link>
