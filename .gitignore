@@ -4,5 +4,6 @@ out/
 build/
 .env*.local
 .vercel
+supabase/
 *.tsbuildinfo
 next-env.d.ts

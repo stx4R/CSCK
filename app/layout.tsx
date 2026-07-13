@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "출석체크",
   },
+  icons: {
+    apple: "/thumbnail.jpg",
+  },
 };
 
 export const viewport: Viewport = {
