@@ -30,6 +30,19 @@ type ConfettiPiece = {
   round: boolean;
 };
 
+function schoolImage(school: string | null | undefined): string | null {
+  switch (school) {
+    case "대신고":
+      return "/DSHS.png";
+    case "동방고":
+      return "/DBHS.png";
+    case "대전외고":
+      return "/DFLHS.svg";
+    default:
+      return null;
+  }
+}
+
 function makeConfetti(): ConfettiPiece[] {
   return Array.from({ length: 36 }, (_, i) => ({
     left: Math.random() * 100,
@@ -364,9 +377,19 @@ export default function AttendanceCheck() {
                     style={{
                       background: u.role === "운영자" ? "rgba(255,59,48,0.10)" : "rgba(52,199,89,0.12)",
                       color: roleColor(u.role),
+                      overflow: "hidden",
                     }}
                   >
-                    {u.name.charAt(0)}
+                    {schoolImage(u.school) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={schoolImage(u.school)!}
+                        alt={u.school ?? ""}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      u.name.charAt(0)
+                    )}
                   </div>
                   <div className="user-info">
                     <span className="user-name">{u.name}</span>
@@ -407,7 +430,7 @@ export default function AttendanceCheck() {
         </section>
       </main>
 
-      {/* ============ 출석체크 확인 ============ */}
+      {/* ============ CSCK Check ============ */}
       {confirmTarget && (
         <div className="overlay" style={{ zIndex: 45 }} onClick={() => setConfirmTarget(null)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
