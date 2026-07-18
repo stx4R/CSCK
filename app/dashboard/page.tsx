@@ -4,62 +4,57 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { clearRecords } from "@/lib/attendance";
 import { useAttendance } from "@/lib/useAttendance";
-import { roleColor, schoolColor } from "@/lib/colors";
+import type { User } from "@/lib/types";
 
-const FILTER_DEFS = [
-  { id: "all", label: "전체" },
-  { id: "normal", label: "정상" },
-  { id: "forced", label: "강제" },
+const CATEGORIES = [
+  { id: "all", label: "All", school: null },
+  { id: "dshs", label: "DSHS", school: "대신고" },
+  { id: "dbhs", label: "DBHS", school: "동방고" },
+  { id: "dflhs", label: "DFLHS", school: "대전외고" },
+  { id: "force", label: "Force", school: null },
 ] as const;
 
-type FilterId = (typeof FILTER_DEFS)[number]["id"];
+type CategoryId = (typeof CATEGORIES)[number]["id"];
 
 export default function Dashboard() {
   const { users, records, refresh } = useAttendance();
-  const [filter, setFilter] = useState<FilterId>("all");
+  const [category, setCategory] = useState<CategoryId>("all");
 
-  const stats = useMemo(() => {
-    const total = users.length;
-    const bySchool = (s: string) => ({
-      done: records.filter((r) => !r.forced && r.school === s).length,
-      total: users.filter((u) => u.school === s).length,
+  const normalCheckedIds = useMemo(() => {
+    const s = new Set<number>();
+    records.forEach((r) => {
+      if (!r.forced && r.user_id != null) s.add(r.user_id);
     });
-    const ds = bySchool("대신고");
-    const db = bySchool("동방고");
-    const dw = bySchool("대전외고");
-    const forcedCount = records.filter((r) => r.forced).length;
-    const doneCount = records.length;
-    const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) + "%" : "0%");
-    return [
-      { label: "전체 출석", labelColor: "#333333", value: String(doneCount), suffix: "/ " + total + "명", pct: pct(doneCount, total), barColor: "#1d1d1f" },
-      { label: "대신고", labelColor: "#248a3d", value: String(ds.done), suffix: "/ " + ds.total + "명", pct: pct(ds.done, ds.total), barColor: "#34c759" },
-      { label: "동방고", labelColor: "#d70015", value: String(db.done), suffix: "/ " + db.total + "명", pct: pct(db.done, db.total), barColor: "#ff3b30" },
-      { label: "대전외고", labelColor: "#0066cc", value: String(dw.done), suffix: "/ " + dw.total + "명", pct: pct(dw.done, dw.total), barColor: "#0071e3" },
-      { label: "강제 출석체크", labelColor: "#d70015", value: String(forcedCount), suffix: "건", pct: pct(forcedCount, doneCount || 1), barColor: "#ff9f0a" },
-    ];
-  }, [users, records]);
+    return s;
+  }, [records]);
 
-  const rows = useMemo(() => {
-    let shown = records.slice().reverse();
-    if (filter === "forced") shown = shown.filter((r) => r.forced);
-    if (filter === "normal") shown = shown.filter((r) => !r.forced);
-    return shown.map((r, i) => ({
-      key: r.id,
-      idx: String(shown.length - i),
-      name: r.name || "(이름 미입력)",
-      role: r.role || r.declared_role || "—",
-      school: r.school || r.declared_school || "—",
-      roleColor: roleColor(r.role || r.declared_role),
-      schoolColor: schoolColor(r.school || r.declared_school),
-      phone: r.phone || "—",
-      time: new Date(r.checked_at).toLocaleTimeString("ko-KR", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-      forced: r.forced,
-    }));
-  }, [records, filter]);
+  const normalCheckedNames = useMemo(() => {
+    const s = new Set<string>();
+    records.forEach((r) => {
+      if (!r.forced && r.name) s.add(r.name);
+    });
+    return s;
+  }, [records]);
+
+  const forcedNames = useMemo(() => {
+    const s = new Set<string>();
+    records.forEach((r) => {
+      if (r.forced && r.name) s.add(r.name);
+    });
+    return s;
+  }, [records]);
+
+  const forcedRecords = useMemo(() => records.filter((r) => r.forced), [records]);
+
+  const peopleOf = (school: string | null) =>
+    school === null ? users : users.filter((u) => u.school === school);
+
+  const statusOf = (u: User): "gray" | "green" | "red" => {
+    if (!normalCheckedIds.has(u.id)) return "gray";
+    return forcedNames.has(u.name) ? "red" : "green";
+  };
+
+  const active = CATEGORIES.find((c) => c.id === category)!;
 
   const clearAll = async () => {
     if (!window.confirm("모든 출석체크 기록을 삭제할까요?")) return;
@@ -74,10 +69,8 @@ export default function Dashboard() {
 
   return (
     <div className="screen" data-screen-label="관리자 대시보드">
-      {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <span className="header-title">관리자 대시보드</span>
           <span className="header-caption">제3회 오량모의국회 출석 현황</span>
@@ -96,69 +89,74 @@ export default function Dashboard() {
       </header>
 
       <main className="dash-main">
-        {/* Stat cards */}
-        <div className="stat-grid">
-          {stats.map((st) => (
-            <div key={st.label} className="stat-card">
-              <span className="stat-label" style={{ color: st.labelColor }}>
-                {st.label}
-              </span>
-              <span className="stat-value">
-                {st.value}
-                <span className="stat-suffix"> {st.suffix}</span>
-              </span>
-              <div className="stat-track">
-                <div className="stat-fill" style={{ background: st.barColor, width: st.pct }} />
-              </div>
-            </div>
-          ))}
+        <div className="cat-bar">
+          <div className="cat-tabs">
+            {CATEGORIES.map((c) => {
+              const isForce = c.id === "force";
+              const people = peopleOf(c.school);
+              const done = isForce
+                ? forcedRecords.length
+                : people.filter((u) => normalCheckedIds.has(u.id)).length;
+              const total = isForce ? null : people.length;
+              return (
+                <button
+                  key={c.id}
+                  className={"cat-tab" + (category === c.id ? " selected" : "")}
+                  onClick={() => setCategory(c.id)}
+                >
+                  <span className="cat-tab-label">{c.label}</span>
+                  <span className="cat-tab-count">
+                    {total === null ? done : done + " / " + total}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="legend">
+            <span className="legend-item">
+              <span className="legend-dot gray" />
+              미출석
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot green" />
+              출석 완료
+            </span>
+            <span className="legend-item">
+              <span className="legend-dot red" />
+              이름 중복
+            </span>
+          </div>
         </div>
 
-        {/* Records table */}
-        <section className="table-card">
-          <div className="table-header">
-            <span className="table-title">출석체크 기록</span>
-            <div className="filter-group">
-              {FILTER_DEFS.map((f) => (
-                <button
-                  key={f.id}
-                  className={"filter-pill" + (filter === f.id ? " selected" : "")}
-                  onClick={() => setFilter(f.id)}
-                >
-                  {f.label}
-                </button>
+        <div className="grid-panel">
+          {category === "force" ? (
+            forcedRecords.length === 0 ? (
+              <div className="grid-empty">
+                <span>강제 출석체크 기록이 없습니다.</span>
+                <span className="grid-empty-sub">강제 출석체크가 진행되면 이곳에 표시됩니다.</span>
+              </div>
+            ) : (
+              <div className="name-grid">
+                {forcedRecords.map((r) => (
+                  <div
+                    key={r.id}
+                    className={"grid-chip " + (normalCheckedNames.has(r.name) ? "red" : "amber")}
+                  >
+                    {r.name || "(이름 미입력)"}
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="name-grid">
+              {peopleOf(active.school).map((u) => (
+                <div key={u.id} className={"grid-chip " + statusOf(u)}>
+                  {u.name}
+                </div>
               ))}
             </div>
-          </div>
-          <div className="table-cols">
-            <span>#</span>
-            <span>이름</span>
-            <span>역할</span>
-            <span>소속 고등학교</span>
-            <span>전화번호</span>
-            <span>체크 시각</span>
-            <span>구분</span>
-          </div>
-          <div className="table-body">
-            {rows.map((r) => (
-              <div key={r.key} className="table-row">
-                <span style={{ color: "#7a7a7a", fontVariantNumeric: "tabular-nums", fontSize: 13 }}>{r.idx}</span>
-                <span style={{ fontWeight: 600 }}>{r.name}</span>
-                <span style={{ color: r.roleColor, fontWeight: 600, fontSize: 14 }}>{r.role}</span>
-                <span style={{ color: r.schoolColor, fontWeight: 600, fontSize: 14 }}>{r.school}</span>
-                <span style={{ fontVariantNumeric: "tabular-nums", color: "#333333", fontSize: 14 }}>{r.phone}</span>
-                <span style={{ fontVariantNumeric: "tabular-nums", color: "#7a7a7a", fontSize: 14 }}>{r.time}</span>
-                {r.forced ? <span className="tag-forced">강제 출석체크</span> : <span className="tag-normal">정상</span>}
-              </div>
-            ))}
-            {rows.length === 0 && (
-              <div className="table-empty">
-                <span>아직 출석체크 기록이 없습니다.</span>
-                <span className="table-empty-sub">출석체크가 완료되면 이곳에 실시간으로 표시됩니다.</span>
-              </div>
-            )}
-          </div>
-        </section>
+          )}
+        </div>
       </main>
     </div>
   );

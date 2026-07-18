@@ -200,7 +200,6 @@ export default function AttendanceCheck() {
         if (keypadOpen) setKeypadOpen(false);
       }}
     >
-      {/* ============ Header ============ */}
       <header className="app-header">
         <div
           className="header-left header-home"
@@ -211,7 +210,6 @@ export default function AttendanceCheck() {
             resetAll();
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span className="header-title">제3회 오량모의국회 출석체크</span>
@@ -230,11 +228,8 @@ export default function AttendanceCheck() {
         </Link>
       </header>
 
-      {/* ============ Main ============ */}
       <main className="kiosk-main">
-        {/* ===== Left: steps ===== */}
         <section className="steps">
-          {/* Step: phone + keypad */}
           <div className="step phone-step">
             <h2
               className="step-title clickable"
@@ -266,7 +261,6 @@ export default function AttendanceCheck() {
               {digits.length > 0 && <span className="phone-count">{matches.length}명</span>}
             </div>
 
-            {/* keypad — morphs from field */}
             <div
               className={"keypad" + (keypadOpen && !forcePanelVisible ? " open" : "")}
               onClick={(e) => e.stopPropagation()}
@@ -275,7 +269,6 @@ export default function AttendanceCheck() {
             </div>
           </div>
 
-          {/* Step 5: no match → alert + forced check-in */}
           {noMatch && (
             <div
               className={"no-match-block" + (keypadOpen && !forcePanelVisible ? " push-down" : "")}
@@ -337,7 +330,6 @@ export default function AttendanceCheck() {
                       완료
                     </button>
                   </div>
-                  {/* keypad — morphs from field */}
                   {keypadOpen && (
                     <div ref={inlineKeypadRef} className="keypad inline" onClick={(e) => e.stopPropagation()}>
                       {keypadButtons}
@@ -349,7 +341,6 @@ export default function AttendanceCheck() {
           )}
         </section>
 
-        {/* ===== Right: Status Window ===== */}
         <section className="status-card">
           <div className="status-header">
             <p>귀하가 입력하신 전화번호에 해당하는 참가자 및 운영자는 아래와 같습니다.</p>
@@ -381,7 +372,6 @@ export default function AttendanceCheck() {
                     }}
                   >
                     {schoolImage(u.school) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={schoolImage(u.school)!}
                         alt={u.school ?? ""}
@@ -430,7 +420,6 @@ export default function AttendanceCheck() {
         </section>
       </main>
 
-      {/* ============ CSCK Check ============ */}
       {confirmTarget && (
         <div className="overlay" style={{ zIndex: 45 }} onClick={() => setConfirmTarget(null)}>
           <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
@@ -489,10 +478,8 @@ export default function AttendanceCheck() {
         </div>
       )}
 
-      {/* ============ Toast ============ */}
       {toast && <div className="toast">{toast}</div>}
 
-      {/* ============ Success overlay ============ */}
       {success && (
         <div className="overlay">
           <div className="confetti-layer">

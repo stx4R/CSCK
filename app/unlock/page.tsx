@@ -56,7 +56,6 @@ export default function UnlockPage() {
     <div className="screen" data-screen-label="대시보드 비밀번호">
       <header className="app-header">
         <div className="header-left">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/moguk_logo.svg" alt="MoGuk" style={{ height: 28, width: "auto" }} />
           <span className="header-title">관리자 대시보드</span>
           <span className="header-caption">제3회 오량모의국회 출석 현황</span>

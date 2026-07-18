@@ -49,7 +49,6 @@ export async function insertRecord(rec: NewRecord): Promise<InsertResult> {
   if (supabase) {
     const { error } = await supabase.from("attendance").insert(rec);
     if (!error) return "ok";
-    // 23505 = unique_violation (attendance_once_idx) → 이미 출석체크됨
     return error.code === "23505" ? "duplicate" : "error";
   }
   const records = readLocal();
@@ -65,7 +64,6 @@ export async function insertRecord(rec: NewRecord): Promise<InsertResult> {
   return "ok";
 }
 
-/** 기록 초기화. 반환값: 실제로 비워졌는지 여부 */
 export async function clearRecords(): Promise<boolean> {
   if (supabase) {
     await supabase.from("attendance").delete().gte("id", 0);
@@ -76,7 +74,6 @@ export async function clearRecords(): Promise<boolean> {
   return true;
 }
 
-/** 기록 변경 구독. Supabase Realtime + 폴링 백업, 또는(로컬 모드) storage 이벤트 + 2초 폴링 */
 export function subscribeRecords(onChange: () => void): () => void {
   if (supabase) {
     const sb = supabase;
@@ -88,7 +85,6 @@ export function subscribeRecords(onChange: () => void): () => void {
         () => onChange()
       )
       .subscribe();
-    // Realtime(WebSocket)이 막히거나 끊겨도 모든 기기가 따라오도록 폴링 백업
     const poll = setInterval(onChange, 5000);
     return () => {
       clearInterval(poll);
