@@ -60,5 +60,3 @@ lib/roster.ts           내장 명단 (supabase/seed.sql에서 자동 생성)
 supabase/schema.sql     테이블 + RLS + Realtime
 supabase/seed.sql       명단 시드 (133명)
 ```
-
-디자인 원본: claude.ai/design 프로젝트의 `Attendance Check.dc.html` / `Dashboard.dc.html`.

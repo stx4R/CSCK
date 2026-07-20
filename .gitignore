@@ -7,4 +7,4 @@ build/
 supabase/
 *.tsbuildinfo
 next-env.d.ts
-roster.ts
+roster-for-vercel.txt
